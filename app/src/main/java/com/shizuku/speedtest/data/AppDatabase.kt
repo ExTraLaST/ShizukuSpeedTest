@@ -10,14 +10,18 @@ class AppDatabase(context: Context) : SQLiteOpenHelper(
     context.applicationContext,
     "speedtest.db",
     null,
-    2
+    3
 ) {
     companion object {
         val BUILTIN_NODES: List<Triple<String, String, String>> = listOf(
-            Triple("Cloudflare（国际）", "https://speed.cloudflare.com", SpeedNode.PROTOCOL_CLOUDFLARE),
-            Triple("南京航空航天大学", "https://speed.nuaa.edu.cn", SpeedNode.PROTOCOL_LIBRESPEED),
+            Triple("上海大学（上海）", "https://speedtest4.cc.shu.edu.cn", SpeedNode.PROTOCOL_LIBRESPEED),
+            Triple("南京大学（南京）", "https://fs.nju.edu.cn/speed", SpeedNode.PROTOCOL_LIBRESPEED_ROOT),
+            Triple("同济大学（上海）", "https://dev.tongji.edu.cn/speedtest", SpeedNode.PROTOCOL_LIBRESPEED),
+            Triple("江苏大学（电信）", "http://speed.ujs.edu.cn", SpeedNode.PROTOCOL_LIBRESPEED),
+            Triple("云南师范大学（昆明）", "https://speedtest.ynnu.edu.cn", SpeedNode.PROTOCOL_LIBRESPEED),
             Triple("香港 BGP", "https://hkbgp.zgocloud.org", SpeedNode.PROTOCOL_LIBRESPEED),
-            Triple("东京 BGP", "https://jpbgp.zgocloud.org", SpeedNode.PROTOCOL_LIBRESPEED)
+            Triple("东京 BGP", "https://jpbgp.zgocloud.org", SpeedNode.PROTOCOL_LIBRESPEED),
+            Triple("Cloudflare（国际）", "https://speed.cloudflare.com", SpeedNode.PROTOCOL_CLOUDFLARE)
         )
 
         private fun seedBuiltinNode(
@@ -97,6 +101,17 @@ class AppDatabase(context: Context) : SQLiteOpenHelper(
         if (oldVersion < 2) {
             db.execSQL(
                 "UPDATE nodes SET name='Cloudflare（国际）' WHERE base_url='https://speed.cloudflare.com' AND builtin=1"
+            )
+            for ((name, baseUrl, protocol) in BUILTIN_NODES) {
+                seedBuiltinNode(db, name, baseUrl, protocol)
+            }
+        }
+        if (oldVersion < 3) {
+            db.execSQL(
+                "DELETE FROM nodes WHERE base_url IN ('https://speed.nuaa.edu.cn', 'http://speed.nuaa.edu.cn') AND builtin=1"
+            )
+            db.execSQL(
+                "UPDATE networks SET default_node_id = NULL WHERE default_node_id IS NOT NULL AND default_node_id NOT IN (SELECT id FROM nodes)"
             )
             for ((name, baseUrl, protocol) in BUILTIN_NODES) {
                 seedBuiltinNode(db, name, baseUrl, protocol)

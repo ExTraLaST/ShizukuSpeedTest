@@ -467,7 +467,7 @@ fun SpeedTestScreen(
                     }
                 }
                 Text(
-                    text = "下载约 ${tier.downloadMb} MB · 上传持续 ${tier.uploadSec} 秒（流量随实际上传速度变化）",
+                    text = "下载 / 上传各持续 ${tier.durationSec} 秒 · ${tier.concurrency} 路并发（流量随实际网速变化）",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),

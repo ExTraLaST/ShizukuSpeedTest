@@ -28,25 +28,31 @@
 
 ## 3. 核心架构与不可回退约束
 
-### 3.1 上传测速（v1.8+ 流式上传，禁止回退）
-- 实现位置：`app/src/main/java/com/shizuku/speedtest/net/SpeedTestEngine.kt` (`measureUpload`)
-- 策略：按档位时长流式分块上传（`setChunkedStreamingMode(65536)`）：
-  - 轻量（`LIGHT`）：2 并发，5 秒，单连接上限 32 MB
-  - 标准（`STANDARD`）：4 并发，10 秒，单连接上限 64 MB
-  - 完整（`FULL`）：6 并发，15 秒，单连接上限 128 MB
-- 到达时限直接 `flush` 并 `disconnect()`，不等待服务端慢响应；跳过前 1 秒预热期，每 200ms 采样瞬时速率，剔除 >3 倍均值的异常尖峰后取稳态采样均值作为最终上传速率。
-- **严禁回退为小流量固定 payload 上传**。
+### 3.1 下行与上传测速引擎（流式按时长测速，禁止回退）
+- 实现位置：`app/src/main/java/com/shizuku/speedtest/net/SpeedTestEngine.kt`（`measureDownload`、`measureUpload`）
+- **下载测速（按时长流式并发）**：
+  - 档位并发与时长：轻量 `2 并发 / 5 秒`、标准 `4 并发 / 10 秒`、完整 `6 并发 / 15 秒`；连接循环拉取大块数据直至到达时限，避免单连接慢尾拖垮整体吞吐，附带 `Accept-Encoding: identity`、`useCaches = false` 及随机防缓存参数 `r`。
+  - 以收到首字节（`firstByteNs`）为基准跳过握手与 TCP Slow Start 预热期（1.2s / 1.8s / 2.0s），采样采用 1 秒滑动窗口平滑，最终下载速率取稳态窗口净字节 / 时长。
+- **上传测速（v1.8+ 流式上传，禁止回退）**：
+  - 保持按档位时长流式分块上传（`setChunkedStreamingMode(16384)`，单次 POST 满 32 MB 自动轮换新请求以防高速网络或服务端单请求上限导致并发跌落），到达时限通过 watchdog 立即 `disconnect()`，不等待服务端响应。
+  - 优先采用 Android 进程级网络层发送字节计数 `TrafficStats.getUidTxBytes(Process.myUid())`（不支持时自动回退应用层字节），以首字节发送时刻（TLS 握手完成后）起算预热期（1.5s / 2.0s / 2.2s）并采用 1 秒滑动窗口，彻底消除 `SO_SNDBUF` / 路由器缓冲引发的倒数函数（`1/x`）曲线；最终上传速度对稳态采样按中位数剔除 >2.2× 尖峰后取均值。
+  - **严禁回退为小流量固定 payload 上传**。
 
 ### 3.2 内置节点与网络可达性说明
-- `AppDatabase.BUILTIN_NODES`：
-  1. `Cloudflare（国际）` — `https://speed.cloudflare.com` (`cloudflare`)
-  2. `南京航空航天大学` — `https://speed.nuaa.edu.cn` (`librespeed`)
-  3. `香港 BGP` — `https://hkbgp.zgocloud.org` (`librespeed`)
-  4. `东京 BGP` — `https://jpbgp.zgocloud.org` (`librespeed`)
-- **重要环境事实**：南京航空航天大学节点在维护者家庭网络环境下不可达，香港 BGP 是实际可用节点；评估节点可用性时不能仅以云端环境连通性为准。
+- 原内置的南京航空航天大学节点（`https://speed.nuaa.edu.cn`）经核查 443 端口拒绝连接，HTTP 端 PHP-FPM 已失效（`GET /backend/garbage.php` 返回 1.5 KB 源码、`POST /backend/empty.php` 返回 HTTP 405），属于服务端故障无法修复，已在数据库 v3 迁移中移除。
+- `AppDatabase.BUILTIN_NODES`（v3）：
+  1. `上海大学（上海）` — `https://speedtest4.cc.shu.edu.cn` (`librespeed`)
+  2. `南京大学（南京）` — `https://fs.nju.edu.cn/speed` (`librespeed_root`，根路径 `/empty.php` & `/garbage.php`)
+  3. `同济大学（上海）` — `https://dev.tongji.edu.cn/speedtest` (`librespeed`)
+  4. `江苏大学（电信）` — `http://speed.ujs.edu.cn` (`librespeed`)
+  5. `云南师范大学（昆明）` — `https://speedtest.ynnu.edu.cn` (`librespeed`)
+  6. `香港 BGP` — `https://hkbgp.zgocloud.org` (`librespeed`)
+  7. `东京 BGP` — `https://jpbgp.zgocloud.org` (`librespeed`)
+  8. `Cloudflare（国际）` — `https://speed.cloudflare.com` (`cloudflare`)
+- **重要环境事实**：教育网 / 电信等大陆节点在不同家庭宽带运营商下的路由可达性与带宽表现存在差异，香港 BGP 已确认在维护者家庭网络可用；评估节点可用性时不能仅以云端环境连通性为准，需以真机实测为准。
 
 ### 3.3 数据持久化与兼容性
-- **SQLite 数据库**：`speedtest.db`，`version = 2`，三张表：`networks`、`nodes`、`results`（含 `idx_results_network_time`、`idx_results_time` 索引）。升级表结构时务必递增版本号并在 `onUpgrade` 做好无损迁移。
+- **SQLite 数据库**：`speedtest.db`，`version = 3`，三张表：`networks`、`nodes`、`results`（含 `idx_results_network_time`、`idx_results_time` 索引）。v2 → v3 迁移会删除原内置南京航空航天大学节点、清理指向已删节点的 `networks.default_node_id`（历史测速记录完整保留），并补充新的内置大陆节点。升级表结构时务必递增版本号并在 `onUpgrade` 做好无损迁移。
 - **SharedPreferences**：`speedtest_settings`，键包括 `retention_days`（默认 90）、`last_node_id`、`traffic_tier`（默认 `STANDARD`）、`theme_mode`（默认 `SYSTEM`）、`dynamic_color`（默认 `true`）。
 - **数据导出与备份**：支持带 UTF-8 BOM 的 CSV 导出以及完整 JSON（`app = "shizuku-speedtest"`, `version = 1`）备份与去重恢复。
 

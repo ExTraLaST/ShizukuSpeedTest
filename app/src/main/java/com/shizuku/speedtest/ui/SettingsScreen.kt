@@ -193,7 +193,7 @@ fun SettingsScreen(
                 }
             }
             Text(
-                "自定义节点支持三种格式：Cloudflare 兼容（__down / __up）、LibreSpeed（填测速网站首页地址，如 https://speed.nuaa.edu.cn）或本地服务（/down、/up、/ping，电脑上跑配套脚本）。",
+                "自定义节点支持三种格式：Cloudflare 兼容（__down / __up）、LibreSpeed（填测速网站首页地址，如 https://speedtest4.cc.shu.edu.cn）或本地服务（/down、/up、/ping，电脑上跑配套脚本）。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
@@ -520,7 +520,7 @@ private fun NodeEditDialog(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(
-                        selected = protocol == SpeedNode.PROTOCOL_LIBRESPEED,
+                        selected = protocol == SpeedNode.PROTOCOL_LIBRESPEED || protocol == SpeedNode.PROTOCOL_LIBRESPEED_ROOT,
                         onClick = { protocol = SpeedNode.PROTOCOL_LIBRESPEED },
                         enabled = !isBuiltin
                     )
@@ -544,9 +544,9 @@ private fun NodeEditDialog(
                         }
                     )
                 }
-                if (protocol == SpeedNode.PROTOCOL_LIBRESPEED) {
+                if (protocol == SpeedNode.PROTOCOL_LIBRESPEED || protocol == SpeedNode.PROTOCOL_LIBRESPEED_ROOT) {
                     Text(
-                        "LibreSpeed 地址填测速网站的首页地址，如 https://speed.nuaa.edu.cn，App 会自动用它的 backend 接口测速。",
+                        "LibreSpeed 地址填测速网站的首页地址，如 https://speedtest4.cc.shu.edu.cn，App 会自动用它的测速接口。",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

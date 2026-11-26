@@ -232,7 +232,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         currentPhase = sample.phase
                         phaseSamples.clear()
                     }
-                    if (sample.phase != TestPhase.LATENCY || sample.value != 0.0) {
+                    if (sample.value > 0.0) {
                         phaseSamples.add(sample.value)
                     }
                     _testState.value = TestUiState.Running(
