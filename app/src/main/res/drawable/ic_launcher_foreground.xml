@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Minimal gauge arc with rounded caps, no ticks -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M34.2,77.8 A28.0,28.0 0 1 1 73.8,77.8"
+        android:strokeColor="#2B4663"
+        android:strokeLineCap="round"
+        android:strokeWidth="6" />
+    <!-- Gauge pointer -->
+    <path
+        android:fillColor="#2B4663"
+        android:pathData="M55.58,61.36 L69.22,40.49 L50.45,56.9 Z" />
+    <!-- Hollow center ring -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54.0,58.0m-4.55,0a4.55,4.55 0,1 1,9.1 0a4.55,4.55 0,1 1,-9.1 0"
+        android:strokeColor="#2B4663"
+        android:strokeWidth="2.7" />
+</vector>

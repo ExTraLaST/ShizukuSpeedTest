@@ -1,12 +1,42 @@
-# ShizukuSpeedTest
+# ShizukuSpeedTest (Shizuku测速)
 
-ShizukuSpeedTest 项目私有仓库。
+一个基于 Kotlin + Jetpack Compose + Material Design 3 开发的 Android 本地网络测速工具，所有测速历史仅保存在本机 SQLite 数据库中，不上传云端。
 
-## 仓库说明
+> 详细架构约束、签名配置与演进说明请参阅 [MIGRATION.md](./MIGRATION.md)。
 
-- 本仓库已配置 `.gitignore`，默认排除依赖目录、构建缓存、本地配置以及大体积二进制/安装包产物（如 `*.apk` 及 >50MB 的产物文件）。
-- 需要保留的历史构建产物与发布安装包统一通过本仓库的 **GitHub Releases** 附件进行托管。
+## 核心功能
+
+- **实时测速**：测量下载速度、上传速度（v1.8+ 按时长流式上传 + 稳态均值）、延迟、抖动、丢包率、路由器网关延迟，以及 Wi-Fi 信号（dBm）/ 频段 / 协商速率；测速过程展示实时仪表盘与折线曲线，测完展示上下行对比曲线。
+- **多协议节点管理**：内置 Cloudflare（国际）、南京航空航天大学、香港 BGP、东京 BGP；支持添加 / 编辑 / 删除自定义节点（Cloudflare 兼容 / LibreSpeed / 本地服务）、节点连通性探测，以及为每个网络单独记忆默认测速节点和别名。
+- **局域网本地测速**：在电脑上运行 [`local_speed_server.py`](./local_speed_server.py)，手机端添加 `http://<电脑局域网IP>:8899` 的「本地服务」节点，即可测量手机 Wi-Fi 到局域网/路由器的真实吞吐。
+- **多网络历史对比**：同一时间轴折线对比多网络历史表现，支持切换下载 / 上传 / 延迟 / 抖动指标、点击图例隐藏/显示曲线，并展示平均 / 最高 / 最低统计。
+- **数据管理与主题**：本地 SQLite 存储（保存时长可配置或自定义天数），支持带 UTF-8 BOM 的 CSV 导出和 JSON 全量备份 / 去重恢复；支持跟随系统 / 白天 / 黑夜模式与 Android 12+ 动态取色。
+
+## 构建说明
+
+- **环境要求**：JDK 17、Android SDK 34（`minSdk 24` / `targetSdk 34`）
+- **Debug 构建**：
+  ```bash
+  ./gradlew assembleDebug
+  ```
+- **Release 构建**（需通过环境变量注入签名信息，keystore 严禁提交至仓库）：
+  ```bash
+  export SHIZUKU_RELEASE_STORE_FILE=/path/to/release.jks
+  export SHIZUKU_RELEASE_STORE_PASSWORD=...
+  export SHIZUKU_RELEASE_KEY_ALIAS=...
+  export SHIZUKU_RELEASE_KEY_PASSWORD=...
+  ./gradlew assembleRelease
+  ```
+
+## 本地测速服务
+
+```bash
+python3 local_speed_server.py --port 8899
+```
+
+启动后在手机 App「设置 -> 测速节点」添加「本地服务」节点，地址填写脚本输出的局域网 URL（如 `http://192.168.6.100:8899`）。
 
 ## 历史发布产物
 
-- **v1.9.1**：`ShizukuSpeedTest-v1.9.1.apk`（请前往本仓库 Releases 页面下载）
+- 历史安装包与大体积产物托管在 **GitHub Releases**（仓库 `.gitignore` 默认排除 `*.apk` 及构建缓存）。
+- **v1.9.1**：`ShizukuSpeedTest-v1.9.1.apk`（SHA-256: `509cbdedd4a529e66f63136c1f1dbf280db5d0aad1463e729654dc9992178fec`）
