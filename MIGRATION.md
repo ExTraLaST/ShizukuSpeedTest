@@ -8,12 +8,16 @@
 - **包名**：`com.shizuku.speedtest`
 - **当前版本**：`versionCode = 12` / `versionName = "1.9.2"`
 - **技术栈**：Kotlin 1.9.24 + Jetpack Compose 1.6.8 + Material Design 3 (`1.2.1`)，AGP `8.5.2`，Gradle `8.8`，`minSdk 24` / `targetSdk 34` / `compileSdk 34`，JDK 17
-- **历史发布包（GitHub Release `v1.9.1`）**：
+- **当前发布包（GitHub Release `v1.9.2`）**：
+  - 文件名：`ShizukuSpeedTest-v1.9.2.apk`
+  - APK SHA-256：`bd1e18a5737fb1df569e12f73596d55fdbe4dd851932a1c423f7809ffce450a4`
+  - Release 证书（`v1.9.2+` 新证书）：`CN=Shizuku, OU=Personal, O=Shizuku, C=CN`
+  - Release 证书 SHA-256：`73ba0db584909f7588552e4e40d6bca2f64377cefc0626f9094b35a4d5c1fbee`
+- **历史发布包（GitHub Release `v1.9.1`，旧证书）**：
   - 文件名：`ShizukuSpeedTest-v1.9.1.apk`
   - APK SHA-256：`509cbdedd4a529e66f63136c1f1dbf280db5d0aad1463e729654dc9992178fec`
-  - Release 证书：`CN=Shizuku, OU=Personal, O=Shizuku, C=CN`
-  - Release 证书 SHA-256：`85255c644990ab26bd14d1a88496283882ceb2a8f4313208e15f0c45a551cf30`
-- **源码重建来源**：由于历史仓库仅保留了 `ShizukuSpeedTest-v1.9.1.apk`（业务类未混淆），当前仓库源码、图标矢量与各分辨率 mipmap 均从该 APK 1:1 还原并验证编译通过，确保升级覆盖安装后数据库、偏好设置与功能完全兼容。
+  - 旧证书 SHA-256：`85255c644990ab26bd14d1a88496283882ceb2a8f4313208e15f0c45a551cf30`（因原 keystore 遗失，自 `v1.9.2` 起切换新证书；从 `v1.9.1` 升级需先在 App 内备份 JSON，卸载旧版再安装 `v1.9.2` 后恢复）
+- **源码重建来源**：由于历史仓库仅保留了 `ShizukuSpeedTest-v1.9.1.apk`（业务类未混淆），当前仓库源码、图标矢量与各分辨率 mipmap 均从该 APK 1:1 还原并验证编译通过，数据库与 JSON 备份格式完全兼容。
 
 ## 2. 签名与发布约束
 
@@ -23,7 +27,7 @@
    - `SHIZUKU_RELEASE_STORE_PASSWORD`
    - `SHIZUKU_RELEASE_KEY_ALIAS`
    - `SHIZUKU_RELEASE_KEY_PASSWORD`
-3. **覆盖安装校验**：发布可覆盖 `v1.9.1` 的正式包前，必须用 `apksigner verify --print-certs` 核对证书 SHA-256 为 `85255c644990ab26bd14d1a88496283882ceb2a8f4313208e15f0c45a551cf30`；更换证书的包无法覆盖安装。
+3. **覆盖安装校验**：发布可覆盖 `v1.9.2` 及之后版本的正式包前，必须用 `apksigner verify --print-certs` 核对证书 SHA-256 为 `73ba0db584909f7588552e4e40d6bca2f64377cefc0626f9094b35a4d5c1fbee`；更换证书的包无法覆盖安装。
 4. **交付规范**：视觉改动需先提供预览确认后再打包；交付 APK 时使用准确版本号文件名（如 `ShizukuSpeedTest-vX.Y.Z.apk`）并附带 SHA-256 校验值；真机行为由项目维护者在手机上实测验证。
 
 ## 3. 核心架构与不可回退约束

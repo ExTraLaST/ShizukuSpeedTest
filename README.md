@@ -36,7 +36,8 @@ python3 local_speed_server.py --port 8899
 
 启动后在手机 App「设置 -> 测速节点」添加「本地服务」节点，地址填写脚本输出的局域网 URL（如 `http://192.168.6.100:8899`）。
 
-## 历史发布产物
+## 发布产物
 
-- 历史安装包与大体积产物托管在 **GitHub Releases**（仓库 `.gitignore` 默认排除 `*.apk` 及构建缓存）。
+- 安装包与大体积产物托管在 **GitHub Releases**（仓库 `.gitignore` 默认排除 `*.apk` 及构建缓存）。
+- **v1.9.2**：`ShizukuSpeedTest-v1.9.2.apk`（SHA-256: `bd1e18a5737fb1df569e12f73596d55fdbe4dd851932a1c423f7809ffce450a4`）
 - **v1.9.1**：`ShizukuSpeedTest-v1.9.1.apk`（SHA-256: `509cbdedd4a529e66f63136c1f1dbf280db5d0aad1463e729654dc9992178fec`）
