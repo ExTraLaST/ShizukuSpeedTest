@@ -6,7 +6,7 @@
 
 - **应用名称**：Shizuku测速
 - **包名**：`com.shizuku.speedtest`
-- **当前版本**：`versionCode = 11` / `versionName = "1.9.1"`
+- **当前版本**：`versionCode = 12` / `versionName = "1.9.2"`
 - **技术栈**：Kotlin 1.9.24 + Jetpack Compose 1.6.8 + Material Design 3 (`1.2.1`)，AGP `8.5.2`，Gradle `8.8`，`minSdk 24` / `targetSdk 34` / `compileSdk 34`，JDK 17
 - **历史发布包（GitHub Release `v1.9.1`）**：
   - 文件名：`ShizukuSpeedTest-v1.9.1.apk`
@@ -65,5 +65,5 @@
 - 极简仪表矢量图标：`ic_launcher_foreground.xml`（深蓝 `#2B4663` 弧线 + 指针 + 空心圆环，无刻度，弧线两端为 `round` 圆弧头）+ 纯白背景 `ic_launcher_background.xml`（`#FFFFFF`）。
 - 各分辨率 `mipmap-*/ic_launcher*.png` 与 `v1.9.1` APK 保持逐像素一致。
 
-## 4. 已知历史小项（供后续迭代参考）
-- `SettingsScreen.kt`「关于」卡片中版本号文案在 `v1.9.1` APK 内仍硬编码为 `Shizuku测速 v1.7`，重建基线暂按原样保留，后续发版时可统一改为自动读取版本名。
+## 4. 版本演进备注
+- `v1.9.2`（`versionCode = 12`）：优化下行按时长流式测速与滑动窗口平滑、修复上行 `1/x` 曲线（引入 `TrafficStats` 网络层计数 + 握手后预热 + 中位数去尖峰，保留 v1.8+ 流式上传架构）、移除失效的南京航空航天大学节点并新增 5 个中国大陆节点（DB `v2 → v3` 无损迁移），同时将「关于」卡片版本号改为动态读取 `packageManager` 的 `versionName`。

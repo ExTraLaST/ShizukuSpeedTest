@@ -382,11 +382,17 @@ fun SettingsScreen(
         }
 
         item {
+            val versionName = remember(context) {
+                runCatching {
+                    @Suppress("DEPRECATION")
+                    context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                }.getOrNull() ?: "1.9.2"
+            }
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("关于", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Shizuku测速 v1.7\n所有测速记录只保存在本机，不上传。测速节点可自行配置；测本地 WiFi 速度时，在电脑上运行配套的 local_speed_server.py，再在上面添加一个本地服务节点即可。",
+                        "Shizuku测速 v$versionName\n所有测速记录只保存在本机，不上传。测速节点可自行配置；测本地 WiFi 速度时，在电脑上运行配套的 local_speed_server.py，再在上面添加一个本地服务节点即可。",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
