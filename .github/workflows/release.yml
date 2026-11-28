@@ -1,0 +1,163 @@
+name: Build & Publish Release APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.9.2; leave empty to use v<versionName>)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Resolve version and release tag
+        id: meta
+        shell: bash
+        run: |
+          VERSION_NAME=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts | head -n 1)
+          VERSION_CODE=$(grep -oP 'versionCode\s*=\s*\K[0-9]+' app/build.gradle.kts | head -n 1)
+          if [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="v${VERSION_NAME}"
+          fi
+          APK_NAME="ShizukuSpeedTest-${TAG}.apk"
+          echo "version_name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+          echo "version_code=${VERSION_CODE}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "apk_name=${APK_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Decode release keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.SHIZUKU_RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.SHIZUKU_RELEASE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SHIZUKU_RELEASE_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.SHIZUKU_RELEASE_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$STORE_PASS" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASS" ]; then
+            echo "::error::Missing one or more SHIZUKU_RELEASE_* secrets."
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          chmod 600 "$RUNNER_TEMP/release.jks"
+
+      - name: Build signed release APK
+        env:
+          SHIZUKU_RELEASE_STORE_FILE: ${{ runner.temp }}/release.jks
+          SHIZUKU_RELEASE_STORE_PASSWORD: ${{ secrets.SHIZUKU_RELEASE_STORE_PASSWORD }}
+          SHIZUKU_RELEASE_KEY_ALIAS: ${{ secrets.SHIZUKU_RELEASE_KEY_ALIAS }}
+          SHIZUKU_RELEASE_KEY_PASSWORD: ${{ secrets.SHIZUKU_RELEASE_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Verify APK signature and compute SHA-256
+        id: verify
+        shell: bash
+        run: |
+          APK_SRC="app/build/outputs/apk/release/app-release.apk"
+          APK_OUT="${RUNNER_TEMP}/${{ steps.meta.outputs.apk_name }}"
+          cp "$APK_SRC" "$APK_OUT"
+
+          APKSIGNER="$(ls -d "${ANDROID_HOME}"/build-tools/*/apksigner | sort -V | tail -n 1)"
+          VERIFY_OUT="$("$APKSIGNER" verify --verbose --print-certs "$APK_OUT")"
+          echo "$VERIFY_OUT"
+
+          CERT_SHA256="$(echo "$VERIFY_OUT" | grep -oP 'Signer #1 certificate SHA-256 digest:\s*\K[0-9a-fA-F]+' | head -n 1)"
+          EXPECTED_CERT="73ba0db584909f7588552e4e40d6bca2f64377cefc0626f9094b35a4d5c1fbee"
+          if [ "${CERT_SHA256,,}" != "${EXPECTED_CERT,,}" ]; then
+            echo "::error::Certificate SHA-256 mismatch: got ${CERT_SHA256}, expected ${EXPECTED_CERT}"
+            exit 1
+          fi
+
+          APK_SHA256="$(sha256sum "$APK_OUT" | awk '{print $1}')"
+          echo "apk_path=${APK_OUT}" >> "$GITHUB_OUTPUT"
+          echo "apk_sha256=${APK_SHA256}" >> "$GITHUB_OUTPUT"
+          echo "cert_sha256=${CERT_SHA256}" >> "$GITHUB_OUTPUT"
+
+      - name: Cleanup keystore
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/release.jks"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          APK_NAME="${{ steps.meta.outputs.apk_name }}"
+          APK_PATH="${{ steps.verify.outputs.apk_path }}"
+          APK_SHA256="${{ steps.verify.outputs.apk_sha256 }}"
+          CERT_SHA256="${{ steps.verify.outputs.cert_sha256 }}"
+          VERSION_NAME="${{ steps.meta.outputs.version_name }}"
+          VERSION_CODE="${{ steps.meta.outputs.version_code }}"
+
+          cat <<EOF > "$RUNNER_TEMP/release_notes.md"
+          ## 更新内容
+
+          ### 测速引擎优化
+          - **下行测速稳定性优化**：改为按档位时长持续多路流式下载（轻量 2路/5s、标准 4路/10s、完整 6路/15s），以首字节到达为起点跳过握手与 TCP Slow Start 预热期，采用 1 秒滑动窗口平滑采样并取稳态窗口净吞吐，消除慢尾连接与缓存波动。
+          - **修复上行 \`1/x\` 倒数曲线**：保留 v1.8+ 流式按时长上传与到时立即断开机制；优先采用 Android 进程级网络层发送字节计数（\`TrafficStats.getUidTxBytes\`），以 TLS 握手后首字节发出时刻起算预热，单次 POST 满 32 MB 自动轮换防并发跌落，并改用中位数过滤尖峰后取稳态均值。
+          - **折线图与版本显示修正**：过滤阶段切换时的 \`0.0\` 占位采样；「关于」页面版本号改为自动读取实际 \`versionName\`。
+
+          ### 中国大陆测速节点更新（DB v2 → v3 无损迁移）
+          - **移除**服务端已失效的「南京航空航天大学」节点（443 拒连 / HTTP PHP-FPM 失效），历史测速记录完整保留。
+          - **新增 5 个中国大陆节点**：上海大学（上海）、南京大学（南京）、同济大学（上海）、江苏大学（电信）、云南师范大学（昆明）；保留香港 BGP、东京 BGP、Cloudflare（国际）。
+
+          ---
+
+          ## 升级安装注意（重要）
+          > **自 \`v1.9.2\` 起启用了新的 Release 签名证书，无法直接覆盖安装 \`v1.9.1\`。**
+          >
+          > 请按以下步骤无损升级：
+          > 1. 在旧版 \`v1.9.1\` 中打开 **设置 → 数据 → 备份数据**，保存 JSON 备份文件；
+          > 2. 卸载 \`v1.9.1\`；
+          > 3. 安装本版本的 \`${APK_NAME}\`；
+          > 4. 打开 **设置 → 数据 → 恢复数据** 导入刚才的 JSON 文件。
+          >
+          > 从 \`v1.9.2\` 起后续版本使用同一签名证书即可直接覆盖安装。
+
+          ## 校验信息
+          - **文件名**：\`${APK_NAME}\`
+          - **版本**：\`versionCode ${VERSION_CODE}\` / \`versionName ${VERSION_NAME}\`
+          - **APK SHA-256**：\`${APK_SHA256}\`
+          - **签名证书 SHA-256**：\`${CERT_SHA256}\`
+          EOF
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK_PATH" --clobber
+            gh release edit "$TAG" \
+              --title "Shizuku测速 ${TAG}" \
+              --notes-file "$RUNNER_TEMP/release_notes.md" \
+              --draft=false
+          else
+            gh release create "$TAG" "$APK_PATH" \
+              --target "${GITHUB_SHA}" \
+              --title "Shizuku测速 ${TAG}" \
+              --notes-file "$RUNNER_TEMP/release_notes.md"
+          fi
