@@ -87,7 +87,7 @@ jobs:
           VERIFY_OUT="$("$APKSIGNER" verify --verbose --print-certs "$APK_OUT")"
           echo "$VERIFY_OUT"
 
-          CERT_SHA256="$(echo "$VERIFY_OUT" | grep -oP 'Signer #1 certificate SHA-256 digest:\s*\K[0-9a-fA-F]+' | head -n 1)"
+          CERT_SHA256="$(echo "$VERIFY_OUT" | grep -oP 'certificate SHA-256 digest:\s*\K[0-9a-fA-F]+' | head -n 1)"
           EXPECTED_CERT="73ba0db584909f7588552e4e40d6bca2f64377cefc0626f9094b35a4d5c1fbee"
           if [ "${CERT_SHA256,,}" != "${EXPECTED_CERT,,}" ]; then
             echo "::error::Certificate SHA-256 mismatch: got ${CERT_SHA256}, expected ${EXPECTED_CERT}"
