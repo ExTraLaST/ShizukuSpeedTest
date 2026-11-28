@@ -39,5 +39,5 @@ python3 local_speed_server.py --port 8899
 ## 发布产物
 
 - 安装包与大体积产物托管在 **GitHub Releases**（仓库 `.gitignore` 默认排除 `*.apk` 及构建缓存）。
-- **v1.9.2**：`ShizukuSpeedTest-v1.9.2.apk`（SHA-256: `bd1e18a5737fb1df569e12f73596d55fdbe4dd851932a1c423f7809ffce450a4`）
+- **v1.9.2**：`ShizukuSpeedTest-v1.9.2.apk`（SHA-256: `b2e36c2ecddad2ca6ab45df602852dd5b621b0a055eeaa03b5a1dc99298af36b`）
 - **v1.9.1**：`ShizukuSpeedTest-v1.9.1.apk`（SHA-256: `509cbdedd4a529e66f63136c1f1dbf280db5d0aad1463e729654dc9992178fec`）

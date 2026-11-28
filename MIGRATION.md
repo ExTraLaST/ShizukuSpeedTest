@@ -10,7 +10,7 @@
 - **技术栈**：Kotlin 1.9.24 + Jetpack Compose 1.6.8 + Material Design 3 (`1.2.1`)，AGP `8.5.2`，Gradle `8.8`，`minSdk 24` / `targetSdk 34` / `compileSdk 34`，JDK 17
 - **当前发布包（GitHub Release `v1.9.2`）**：
   - 文件名：`ShizukuSpeedTest-v1.9.2.apk`
-  - APK SHA-256：`bd1e18a5737fb1df569e12f73596d55fdbe4dd851932a1c423f7809ffce450a4`
+  - APK SHA-256：`b2e36c2ecddad2ca6ab45df602852dd5b621b0a055eeaa03b5a1dc99298af36b`
   - Release 证书（`v1.9.2+` 新证书）：`CN=Shizuku, OU=Personal, O=Shizuku, C=CN`
   - Release 证书 SHA-256：`73ba0db584909f7588552e4e40d6bca2f64377cefc0626f9094b35a4d5c1fbee`
 - **历史发布包（GitHub Release `v1.9.1`，旧证书）**：
